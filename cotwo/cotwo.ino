@@ -390,7 +390,7 @@ void displayClearBuffer() {
 void toDigitArray(unsigned long n) {
   if (n < 0 || n > 99999) {
     for (int i = 0; i < 6; i++) {
-      _digitArray[i] = 10;
+      _digitArray[i] = 10; // Since each val in this array represents a "digit", 10 is used as an "invalid" value.
 
     }
     _digitArrayLast = 0;
