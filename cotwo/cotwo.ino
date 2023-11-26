@@ -4,8 +4,8 @@
 #define SCDALTITUDEOFFSET 1409 // measurement altitude in meters
 
 // GPIO pin# defs
-#define P_BLANK 18 // See getButtonState() before editing-- it references the port bit instead of this pin number
-#define P_BUTTON 7
+#define P_BLANK 18
+#define P_BUTTON 7 // See getButtonState() before editing-- it references the port bit instead of this pin number
 #define P_LOAD 14 // See tubeLatch() before editing (same as prev. comment)
 #define P_SCDREADY 10
 
