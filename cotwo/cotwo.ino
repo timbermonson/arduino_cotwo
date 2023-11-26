@@ -200,7 +200,7 @@ void handleSettingsButtonPress() {
         scd30.selfCalibrationEnabled(!scd30.selfCalibrationEnabled()); // Toggle self-calibration
         break;
       case 1:
-        scd30.forceRecalibrationWithReference((int)850);
+        scd30.forceRecalibrationWithReference((int)430);
         delay(10);
         Serial.println(scd30.getForcedCalibrationReference());
         settingsRecalTriggered = true;
