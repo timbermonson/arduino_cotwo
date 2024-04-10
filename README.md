@@ -3,7 +3,7 @@ Firmware for an arduino-based co2 detector, which displays its reading on an IV-
 
 The serial part of the code is... BAD, but it inspired me to make a [Dedicated Serial Library!](https://github.com/timbermonson/arduino_SerialCLI)
 
-# Showoff pics!
+# Assembly Photos
 Front View
 ![Front](https://github.com/timbermonson/arduino_cotwo/blob/main/images/Front.jpg?raw=true)
 
