@@ -10,5 +10,5 @@ Front View
 Top View
 ![Front](https://github.com/timbermonson/arduino_cotwo/blob/main/images/Top.jpg?raw=true)
 
-Bottom (Check that soldering!) (Okay it's not that great *but I think I did okay!!!*)
+Bottom View (Check that protoboard soldering!)
 ![Bottom](https://github.com/timbermonson/arduino_cotwo/blob/main/images/Bottom_Mirrored.jpg?raw=true)
