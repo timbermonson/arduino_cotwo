@@ -3,7 +3,7 @@ Firmware for an arduino-based co2 detector, which displays its reading on an IV-
 
 The serial part of the code is... BAD, but it inspired me to make a [Dedicated Serial Library!](https://github.com/timbermonson/arduino_SerialCLI)
 
-* Parts Used
+# Parts Used
 - MCU: Arduino Pro Micro 5v Clone
 - CO2 Sensor: Sensiron SCD-30
 - Tube: IV-21 (Soviet old stock, no longer manufactured)
