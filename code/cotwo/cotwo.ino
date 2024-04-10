@@ -1,6 +1,6 @@
 #define SERBAUDRATE 115200
 
-#define SCDMEASUREMENTINTERVAL 2 // interval is in seconds, range is 2-1800, same amt of time added as startup delay
+#define SCDMEASUREMENTINTERVAL 5 // interval is in seconds, range is 2-1800, same amt of time added as startup delay
 #define SCDALTITUDEOFFSET 1409 // measurement altitude in meters
 
 // GPIO pin# defs
@@ -38,6 +38,7 @@ String serialMessage = "";
 // Thus, 3 bytes for the tube buffer (9 grids + 8 segments = 17 pins stretched over the 20 bits of my shift reg chip)
 // I abstracted that to a "display buffer" that can contain every segment, and tubeRefresh() fills OutBuffer with it as-needed.
 byte tubeOutBuffer[] = {0, 0, 0};
+// The display boots with this test "image", just one segment on each digit
 byte displayBuffer[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // The grids are wired out of order on the output shift-reg, so I use this to lookup which is which.
@@ -199,7 +200,7 @@ void handleSettingsButtonPress() {
         scd30.selfCalibrationEnabled(!scd30.selfCalibrationEnabled()); // Toggle self-calibration
         break;
       case 1:
-        scd30.forceRecalibrationWithReference((int)430);
+        scd30.forceRecalibrationWithReference((int)850);
         delay(10);
         Serial.println(scd30.getForcedCalibrationReference());
         settingsRecalTriggered = true;
@@ -504,7 +505,9 @@ void initSCD() {
   Wire.setClock(100000);
   delay(10);
 
+  scd30.setMeasurementInterval(SCDMEASUREMENTINTERVAL);
   scd30.startContinuousMeasurement();
+
   delay(5);
 }
 
