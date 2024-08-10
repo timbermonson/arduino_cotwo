@@ -1,12 +1,12 @@
 #define SERBAUDRATE 115200
 
-#define SCDMEASUREMENTINTERVAL 5 // interval is in seconds, range is 2-1800, same amt of time added as startup delay
-#define SCDALTITUDEOFFSET 1409 // measurement altitude in meters
+#define SCDMEASUREMENTINTERVAL 5  // interval is in seconds, range is 2-1800, same amt of time added as startup delay
+#define SCDALTITUDEOFFSET 1409    // measurement altitude in meters
 
 // GPIO pin# defs
 #define P_BLANK 18
-#define P_BUTTON 7 // See getButtonState() before editing-- it references the port bit instead of this pin number
-#define P_LOAD 14 // See tubeLatch() before editing (same as prev. comment)
+#define P_BUTTON 7  // See getButtonState() before editing-- it references the port bit instead of this pin number
+#define P_LOAD 14   // See tubeLatch() before editing (same as prev. comment)
 #define P_SCDREADY 10
 
 // tubeRefresh actually cycles through display multiplexing REFRESHCYCLENUM times before returning.
@@ -25,7 +25,7 @@
 
 const char helpMessage[] PROGMEM = "----- HELP -----\nping: gets a 'pong' reply.\nm0: sets the current data-display mode (0: CO2, 1:Celsius, 2: Fahrenheit, 3: Humidity)\np: pauses the sensor-read-display cycle (for editing display manually).\nu: unpauses the sensor-read-display cycle.\nclr: clears the display buffer.\ndb1,01101101: sets/lights-up the given bits/segments at the given index/digit in the display buffer (ex. 1: starting digit, 01101101: segment config. to display # 3).\ndv8,1,1234: display numerical value at display index. 8: starting index (8 is last digit). 1: justification (0: left, 1: right), 1234: the value to be right-justified & displayed.\nb: reads the cur. state of the button pin.\nscdRead: requests an scd-30 data read\nscdReady: checks if the scd-30 currently has unread data\nscdSensor: outputs the cur. scd-30 sensor readings\nscdCalAuto: reads whether the scd-30 is in self-calibration mode\nscdCalAuto,1: sets the scd-30 self-calibration setting (1: on, 2: off)\nscdAltOffset: reads the cur. scd-30 alt offset\nscdAltOffset,1409: sets the cur. scd-30 alt offset (set '1409' to your alt in Ms abv sea lvl)\nscdTempOffset: reads the cur. scd-30 pos. temp offset (C)\nscdTempOffset,1013: sets the cur. scd-30 pos. temp offset (C) (100's of a deg, ex. 1013 = 10.13 deg C)\nscdCalValue: reads the cur. scd-30 cal. reference ppm value (typ. 400-outside co2 conc.)\nscdForceRecalReference,402: sets the cur. scd-30 cal. to read the current conc. as the given value (ex. 400 while scd is outside)\n---------------";
 
-Adafruit_SCD30  scd30;
+Adafruit_SCD30 scd30;
 
 // Note to reader: I prefer globals for any state-related values (or arrays) when programming small embedded stuff.
 
@@ -37,12 +37,11 @@ String serialMessage = "";
 // The tube can only display on one grid at a time & must be multiplexed.
 // Thus, 3 bytes for the tube buffer (9 grids + 8 segments = 17 pins stretched over the 20 bits of my shift reg chip)
 // I abstracted that to a "display buffer" that can contain every segment, and tubeRefresh() fills OutBuffer with it as-needed.
-byte tubeOutBuffer[] = {0, 0, 0};
-// The display boots with this test "image", just one segment on each digit
-byte displayBuffer[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+byte tubeOutBuffer[] = { 0, 0, 0 };
+byte displayBuffer[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // The grids are wired out of order on the output shift-reg, so I use this to lookup which is which.
-byte tubeGridTranslationLayer[] = {4, 3, 5, 2, 6, 1, 7, 0, 8};
+byte tubeGridTranslationLayer[] = { 4, 3, 5, 2, 6, 1, 7, 0, 8 };
 
 // utility vars for my binary-decimal conversion needed for the display
 // this is only meant to handle 5 digits (as chars) with the final element being a slot for the null terminator
@@ -82,8 +81,8 @@ unsigned long long btnState_last_started = 0;
 
 // Display "mode": which sensor data it's currently piping to the display.
 // Set to -1 to "pause" this, allowing manual disp control over serial. (with command "p")
-int modeNum = 0; //0: CO2, 1:Celsius, 2: Fahrenheit, 3: Humidity
-int modeNum_last = 0; // Hacky way to preserve mode across display-pauses (which are triggered by serial command for debugging)
+int modeNum = 0;       //0: CO2, 1:Celsius, 2: Fahrenheit, 3: Humidity
+int modeNum_last = 0;  // Hacky way to preserve mode across display-pauses (which are triggered by serial command for debugging)
 
 // State variables for settings UI
 int settingsPageNum = -1;
@@ -98,6 +97,8 @@ bool settingsRecalTriggered = false;
 bool btnHasReleaseEvent = false;
 // Used for detecting long-presses (only used in settings menu)
 bool btnHasLongReleaseEvent = false;
+
+bool displayIsOn = true;
 
 void setup() {
   initTube();
@@ -182,8 +183,7 @@ void getButtonState() {
   if (btnState == true) {
     if ((millis() - btnState_last_started) >= BTNLONGDEBOUNCEDUR) {
       btnHasLongReleaseEvent = true;
-    }
-    else if ((millis() - btnState_last_started) >= BTNDEBOUNCEDUR) {
+    } else if ((millis() - btnState_last_started) >= BTNDEBOUNCEDUR) {
       btnHasReleaseEvent = true;
     }
   }
@@ -197,7 +197,7 @@ void handleSettingsButtonPress() {
     tubeBlank();
     switch (settingsPageNum) {
       case 0:
-        scd30.selfCalibrationEnabled(!scd30.selfCalibrationEnabled()); // Toggle self-calibration
+        scd30.selfCalibrationEnabled(!scd30.selfCalibrationEnabled());  // Toggle self-calibration
         break;
       case 1:
         scd30.forceRecalibrationWithReference((int)850);
@@ -230,11 +230,17 @@ void handleSettingsButtonPress() {
 }
 
 void handleButtonPress() {
-  if (!btnHasReleaseEvent) return;
+  if (btnHasReleaseEvent) {
+    handleButtonPressShort();
+  } else if (btnHasLongReleaseEvent) {
+    handleButtonPressLong();
+  } else return;
+
   btnHasLongReleaseEvent = false;
   btnHasReleaseEvent = false;
+}
 
-
+void handleButtonPressShort() {
   if (modeNum < 0) {
     modeNum = 0;
     return;
@@ -245,6 +251,10 @@ void handleButtonPress() {
     modeNum = 0;
     return;
   }
+}
+
+void handleButtonPressLong() {
+  displayIsOn = !displayIsOn;
 }
 
 void getHumidityData() {
@@ -390,8 +400,7 @@ void displayClearBuffer() {
 void toDigitArray(unsigned long n) {
   if (n < 0 || n > 99999) {
     for (int i = 0; i < 6; i++) {
-      _digitArray[i] = 10; // Since each val in this array represents a "digit", 10 is used as an "invalid" value.
-
+      _digitArray[i] = 10;  // Since each val in this array represents a "digit", 10 is used as an "invalid" value.
     }
     _digitArrayLast = 0;
     return;
@@ -421,6 +430,11 @@ void toDigitArray(unsigned long n) {
 }
 
 void tubeRefresh() {
+  if (!displayIsOn) {
+    tubeBlank();
+    return;
+  }
+
   for (int i = 0; i < REFRESHCYCLENUM; i++) {
     for (int i = 0; i < 9; i++) {
       if (displayBuffer[i] == 0) continue;
@@ -468,14 +482,14 @@ void tubeUnblank() {
 
 void tubeLatch() {
   PORTB |= 1 << 3;
-  serialMessage = ""; // Adds a tiny delay, seems to be necessary
+  serialMessage = "";  // Adds a tiny delay, seems to be necessary
   PORTB &= !((byte)1 << 3);
 }
 
 void initSerial() {
   Serial.begin(SERBAUDRATE);
   delay(10);
-  while (Serial.available()) Serial.read(); // Clear serial buffer at init
+  while (Serial.available()) Serial.read();  // Clear serial buffer at init
 }
 
 void initTube() {
@@ -604,7 +618,7 @@ void handleSerialMessage() {
   }
 
   if (serialMessage.startsWith(F("scdCalAuto,"))) {
-    bool setting =  serialMessage.charAt(11) == '1';
+    bool setting = serialMessage.charAt(11) == '1';
     Serial.print(F("setting scd-30 self-calibration to: "));
     pbool(setting);
     scd30.selfCalibrationEnabled(setting);
@@ -618,7 +632,7 @@ void handleSerialMessage() {
   }
 
   if (serialMessage.startsWith(F("scdAltOffset,"))) {
-    int newAltOffset =  serialMessage.substring(13).toInt();
+    int newAltOffset = serialMessage.substring(13).toInt();
     Serial.print(F("setting scd-30 altitude offset to: "));
     Serial.println(newAltOffset);
     scd30.setAltitudeOffset(newAltOffset);
@@ -632,7 +646,7 @@ void handleSerialMessage() {
   }
 
   if (serialMessage.startsWith(F("scdTempOffset,"))) {
-    int newTempOffset =  serialMessage.substring(14).toInt();
+    int newTempOffset = serialMessage.substring(14).toInt();
     Serial.print(F("setting scd-30 temperature offset to: "));
     Serial.println(newTempOffset);
     scd30.setTemperatureOffset(newTempOffset);
@@ -646,7 +660,7 @@ void handleSerialMessage() {
   }
 
   if (serialMessage.startsWith(F("scdForceRecalReference,"))) {
-    int newCalibrationReference =  serialMessage.substring(23).toInt();
+    int newCalibrationReference = serialMessage.substring(23).toInt();
     Serial.print(F("setting scd-30 calreference, w/ current ppm as: "));
     Serial.println(newCalibrationReference);
     scd30.forceRecalibrationWithReference(newCalibrationReference);
@@ -654,17 +668,17 @@ void handleSerialMessage() {
   }
 
   // Complex commands w/ arguments
-  if (serialMessage.startsWith(F("dv"))) { //ex: dv8,1,99834 (5 digits max)
+  if (serialMessage.startsWith(F("dv"))) {  //ex: dv8,1,99834 (5 digits max)
     serialDisplayValue(serialMessage);
     return;
   }
 
-  if (serialMessage.startsWith(F("db"))) { //ex: db8,10101010 (8 bits, 1 for each segment)
+  if (serialMessage.startsWith(F("db"))) {  //ex: db8,10101010 (8 bits, 1 for each segment)
     serialDisplayBuffer(serialMessage);
     return;
   }
 
-  if (serialMessage.startsWith(F("m"))) { //ex: m2
+  if (serialMessage.startsWith(F("m"))) {  //ex: m2
     serialSetMode(serialMessage);
     return;
   }
@@ -695,7 +709,7 @@ void serialRequestData() {
 }
 
 void serialSetMode(String message) {
-  int mode =  message.substring(1).toInt();
+  int mode = message.substring(1).toInt();
 
   Serial.print(F("Setting mode to "));
   Serial.println(mode);
@@ -720,7 +734,7 @@ void serialDisplayValue(String message) {
 
   byte gridNum = message.charAt(2) - '0';
   bool isRightJustified = message.charAt(4) == '1';
-  unsigned long value =  message.substring(6).toInt();
+  unsigned long value = message.substring(6).toInt();
 
   // Provide the programmer with a line of code that does what they just commanded
   // This allows me to draw stuff on the display in realtime, then copy what I just drew into sourcecode
